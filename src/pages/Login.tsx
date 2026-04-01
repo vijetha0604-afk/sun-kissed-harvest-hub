@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sprout, ShoppingBasket, Mail, Lock, CreditCard, Loader2, Eye, EyeOff, Mic, MicOff } from 'lucide-react';
+import { Sprout, ShoppingBasket, Mail, Lock, CreditCard, Loader2, Eye, EyeOff, Mic, MicOff, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Language, speechLangCode } from '@/lib/i18n';
 
