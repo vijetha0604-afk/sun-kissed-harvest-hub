@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sprout, ShoppingBasket, Mail, Lock, CreditCard, Loader2, Eye, EyeOff, Mic, MicOff, User } from 'lucide-react';
+import { Sprout, ShoppingBasket, Lock, CreditCard, Loader2, Eye, EyeOff, Mic, MicOff, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Language, speechLangCode } from '@/lib/i18n';
 
@@ -15,9 +15,6 @@ const translations: Record<string, Record<Language, string>> = {
   'login.farmer': { en: 'Farmer', hi: 'किसान', kn: 'ರೈತ' },
   'login.consumer': { en: 'Consumer', hi: 'उपभोक्ता', kn: 'ಗ್ರಾಹಕ' },
   'login.name': { en: 'Your Name', hi: 'आपका नाम', kn: 'ನಿಮ್ಮ ಹೆಸರು' },
-  'login.email': { en: 'Email', hi: 'ईमेल', kn: 'ಇಮೇಲ್' },
-  'login.voice_name_prompt': { en: 'Please say your full name now.', hi: 'कृपया अब अपना पूरा नाम बोलें।', kn: 'ದಯವಿಟ್ಟು ಈಗ ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರನ್ನು ಹೇಳಿ.' },
-  'login.name_accepted': { en: 'Name recorded.', hi: 'नाम दर्ज हुआ।', kn: 'ಹೆಸರು ದಾಖಲಾಗಿದೆ.' },
   'login.password': { en: 'Password / PIN', hi: 'पासवर्ड / पिन', kn: 'ಪಾಸ್ವರ್ಡ್ / ಪಿನ್' },
   'login.aadhaar': { en: 'Aadhaar / KCC Number', hi: 'आधार / KCC नंबर', kn: 'ಆಧಾರ್ / KCC ಸಂಖ್ಯೆ' },
   'login.signin': { en: 'Sign In', hi: 'साइन इन', kn: 'ಸೈನ್ ಇನ್' },
@@ -25,11 +22,13 @@ const translations: Record<string, Record<Language, string>> = {
   'login.toggle_signup': { en: "Don't have an account? Sign up", hi: 'खाता नहीं है? साइन अप करें', kn: 'ಖಾತೆ ಇಲ್ಲವೇ? ಸೈನ್ ಅಪ್ ಮಾಡಿ' },
   'login.toggle_signin': { en: 'Already have an account? Sign in', hi: 'पहले से खाता है? साइन इन करें', kn: 'ಈಗಾಗಲೇ ಖಾತೆ ಇದೆಯೇ? ಸೈನ್ ಇನ್ ಮಾಡಿ' },
   'login.error': { en: 'Invalid credentials', hi: 'अमान्य क्रेडेंशियल', kn: 'ಅಮಾನ್ಯ ರುಜುವಾತುಗಳು' },
-  'login.check_email': { en: 'Check your email to confirm!', hi: 'पुष्टि करने के लिए अपना ईमेल जांचें!', kn: 'ದೃಢೀಕರಿಸಲು ನಿಮ್ಮ ಇಮೇಲ್ ಪರಿಶೀಲಿಸಿ!' },
+  'login.check_email': { en: 'Account created! You can now sign in.', hi: 'खाता बनाया गया! अब साइन इन करें।', kn: 'ಖಾತೆ ರಚಿಸಲಾಗಿದೆ! ಈಗ ಸೈನ್ ಇನ್ ಮಾಡಿ.' },
+  'login.voice_name_prompt': { en: 'Please say your full name now.', hi: 'कृपया अब अपना पूरा नाम बोलें।', kn: 'ದಯವಿಟ್ಟು ಈಗ ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರನ್ನು ಹೇಳಿ.' },
   'login.voice_aadhaar_prompt': { en: 'Please say your 12-digit Aadhaar number now.', hi: 'कृपया अब अपना 12 अंकों का आधार नंबर बोलें।', kn: 'ದಯವಿಟ್ಟು ಈಗ ನಿಮ್ಮ 12 ಅಂಕಿಯ ಆಧಾರ್ ಸಂಖ್ಯೆಯನ್ನು ಹೇಳಿ.' },
   'login.voice_password_prompt': { en: 'Please say your PIN or password now.', hi: 'कृपया अब अपना पिन या पासवर्ड बोलें।', kn: 'ದಯವಿಟ್ಟು ಈಗ ನಿಮ್ಮ ಪಿನ್ ಅಥವಾ ಪಾಸ್‌ವರ್ಡ್ ಹೇಳಿ.' },
   'login.voice_heard': { en: 'I heard', hi: 'मैंने सुना', kn: 'ನಾನು ಕೇಳಿದೆ' },
   'login.voice_correct': { en: 'Is this correct?', hi: 'क्या यह सही है?', kn: 'ಇದು ಸರಿಯೇ?' },
+  'login.name_accepted': { en: 'Name accepted.', hi: 'नाम स्वीकृत।', kn: 'ಹೆಸರು ಸ್ವೀಕರಿಸಲಾಗಿದೆ.' },
   'login.pin_accepted': { en: 'PIN accepted.', hi: 'पिन स्वीकृत।', kn: 'ಪಿನ್ ಸ್ವೀಕರಿಸಲಾಗಿದೆ.' },
   'login.listening': { en: 'Listening...', hi: 'सुन रहा है...', kn: 'ಕೇಳುತ್ತಿದೆ...' },
 };
@@ -55,6 +54,16 @@ function formatAadhaar(digits: string): string {
   return `${d.slice(0, 4)}-${d.slice(4, 8)}-${d.slice(8)}`;
 }
 
+const wordToDigit: Record<string, string> = {
+  zero: '0', one: '1', two: '2', three: '3', four: '4',
+  five: '5', six: '6', seven: '7', eight: '8', nine: '9',
+  oh: '0', o: '0',
+  'शून्य': '0', 'एक': '1', 'दो': '2', 'तीन': '3', 'चार': '4',
+  'पांच': '5', 'छह': '6', 'सात': '7', 'आठ': '8', 'नौ': '9',
+  'ಸೊನ್ನೆ': '0', 'ಒಂದು': '1', 'ಎರಡು': '2', 'ಮೂರು': '3', 'ನಾಲ್ಕು': '4',
+  'ಐದು': '5', 'ಆರು': '6', 'ಏಳು': '7', 'ಎಂಟು': '8', 'ಒಂಬತ್ತು': '9',
+};
+
 function SoundWaveVisualizer() {
   return (
     <div className="flex items-center justify-center gap-1 h-8 mt-2">
@@ -70,33 +79,35 @@ function SoundWaveVisualizer() {
   );
 }
 
+type VoiceField = 'name' | 'aadhaar' | 'password';
+
 export default function Login({ lang }: LoginProps) {
   const navigate = useNavigate();
   const [role, setRole] = useState<'farmer' | 'consumer'>('farmer');
   const [isSignUp, setIsSignUp] = useState(false);
   const [farmerName, setFarmerName] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [aadhaar, setAadhaar] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [listeningField, setListeningField] = useState<'name' | 'aadhaar' | 'password' | null>(null);
+  const [listeningField, setListeningField] = useState<VoiceField | null>(null);
   const recognitionRef = useRef<any>(null);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try { recognitionRef.current.stop(); } catch (_) {}
       recognitionRef.current = null;
     }
     setListeningField(null);
   }, []);
 
-  const startVoiceInput = useCallback((field: 'name' | 'aadhaar' | 'password') => {
+  const startVoiceInput = useCallback((field: VoiceField) => {
+    // Toggle off if already listening
     if (listeningField) {
       stopListening();
-      return;
+      if (listeningField === field) return;
     }
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -107,72 +118,88 @@ export default function Login({ lang }: LoginProps) {
 
     setListeningField(field);
 
-    // Prompt the user
-    const promptKey = field === 'name' ? 'login.voice_name_prompt' : field === 'aadhaar' ? 'login.voice_aadhaar_prompt' : 'login.voice_password_prompt';
-    speak(lt(promptKey, lang), lang);
+    // Start recognition immediately
+    const recognition = new SpeechRecognition();
+    recognition.lang = speechLangCode[lang];
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognition.continuous = false;
+    recognitionRef.current = recognition;
 
-    // Delay recognition start so TTS prompt finishes
-    setTimeout(() => {
-      const recognition = new SpeechRecognition();
-      recognition.lang = speechLangCode[lang];
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-      recognition.continuous = false;
-      recognitionRef.current = recognition;
+    // Speak prompt in parallel (doesn't block recognition)
+    const promptKeys: Record<VoiceField, string> = {
+      name: 'login.voice_name_prompt',
+      aadhaar: 'login.voice_aadhaar_prompt',
+      password: 'login.voice_password_prompt',
+    };
+    speak(lt(promptKeys[field], lang), lang);
 
-      recognition.onresult = (event: any) => {
-        const transcript: string = event.results[0][0].transcript;
+    recognition.onresult = (event: any) => {
+      const result = event.results[event.results.length - 1];
+      const transcript: string = result[0].transcript;
 
-        if (field === 'name') {
-          const name = transcript.trim();
-          setFarmerName(name);
-          speak(`${lt('login.voice_heard', lang)} ${name}. ${lt('login.name_accepted', lang)}`, lang);
-        } else if (field === 'aadhaar') {
-          const wordToDigit: Record<string, string> = {
-            zero: '0', one: '1', two: '2', three: '3', four: '4',
-            five: '5', six: '6', seven: '7', eight: '8', nine: '9',
-            oh: '0', o: '0',
-            'शून्य': '0', 'एक': '1', 'दो': '2', 'तीन': '3', 'चार': '4',
-            'पांच': '5', 'छह': '6', 'सात': '7', 'आठ': '8', 'नौ': '9',
-            'ಸೊನ್ನೆ': '0', 'ಒಂದು': '1', 'ಎರಡು': '2', 'ಮೂರು': '3', 'ನಾಲ್ಕು': '4',
-            'ಐದು': '5', 'ಆರು': '6', 'ಏಳು': '7', 'ಎಂಟು': '8', 'ಒಂಬತ್ತು': '9',
-          };
-          let digits = '';
-          const words = transcript.toLowerCase().split(/[\s,.-]+/);
-          for (const w of words) {
-            if (wordToDigit[w]) digits += wordToDigit[w];
-            else {
-              const nums = w.replace(/\D/g, '');
-              if (nums) digits += nums;
-            }
+      if (field === 'name') {
+        setFarmerName(transcript.trim());
+        if (result.isFinal) {
+          speak(`${lt('login.voice_heard', lang)} ${transcript.trim()}. ${lt('login.name_accepted', lang)}`, lang);
+          setListeningField(null);
+        }
+      } else if (field === 'aadhaar') {
+        // Extract digits from speech
+        let digits = '';
+        const words = transcript.toLowerCase().split(/[\s,.-]+/);
+        for (const w of words) {
+          if (wordToDigit[w]) digits += wordToDigit[w];
+          else {
+            const nums = w.replace(/\D/g, '');
+            if (nums) digits += nums;
           }
-          const formatted = formatAadhaar(digits);
-          setAadhaar(formatted);
+        }
+        setAadhaar(formatAadhaar(digits));
+        if (result.isFinal) {
           const spokenDigits = digits.split('').join(' ');
           speak(`${lt('login.voice_heard', lang)} ${spokenDigits}. ${lt('login.voice_correct', lang)}`, lang);
-        } else {
-          setPassword(transcript.trim());
-          speak(lt('login.pin_accepted', lang), lang);
+          setListeningField(null);
         }
-        setListeningField(null);
-      };
+      } else {
+        // Password — use raw transcript
+        setPassword(transcript.trim());
+        if (result.isFinal) {
+          speak(lt('login.pin_accepted', lang), lang);
+          setListeningField(null);
+        }
+      }
+    };
 
-      recognition.onerror = () => setListeningField(null);
-      recognition.onend = () => setListeningField(null);
+    recognition.onerror = () => {
+      setListeningField(null);
+      recognitionRef.current = null;
+    };
+    recognition.onend = () => {
+      setListeningField(null);
+      recognitionRef.current = null;
+    };
 
-      recognition.start();
-    }, 1500);
+    recognition.start();
   }, [lang, listeningField, stopListening]);
 
   useEffect(() => {
-    return () => { if (recognitionRef.current) recognitionRef.current.stop(); };
+    return () => { if (recognitionRef.current) try { recognitionRef.current.stop(); } catch (_) {} };
   }, []);
+
+  // Build email from name for auth (name@farmchain.local)
+  const buildEmail = (name: string) => {
+    const slug = name.trim().toLowerCase().replace(/\s+/g, '.').replace(/[^a-z0-9.]/g, '') || 'farmer';
+    return `${slug}@farmchain.local`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     setMessage('');
+
+    const email = buildEmail(farmerName);
 
     try {
       if (isSignUp) {
@@ -182,9 +209,9 @@ export default function Login({ lang }: LoginProps) {
           options: {
             emailRedirectTo: window.location.origin,
             data: {
-              display_name: isFarmer && farmerName ? farmerName : email.split('@')[0],
+              display_name: farmerName.trim(),
               role,
-              aadhaar_kcc: isFarmer ? aadhaar.replace(/-/g, '') : null,
+              aadhaar_kcc: role === 'farmer' ? aadhaar.replace(/-/g, '') : null,
             },
           },
         });
@@ -203,6 +230,16 @@ export default function Login({ lang }: LoginProps) {
   };
 
   const isFarmer = role === 'farmer';
+
+  const MicButton = ({ field, isActive }: { field: VoiceField; isActive: boolean }) => (
+    <button
+      type="button"
+      onClick={() => startVoiceInput(field)}
+      className={`p-1.5 rounded-full transition-all ${isActive ? 'bg-destructive text-destructive-foreground animate-pulse' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
+    >
+      {isActive ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+    </button>
+  );
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -230,38 +267,23 @@ export default function Login({ lang }: LoginProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-6 space-y-4">
-          {/* Name — farmer only */}
-          {isFarmer && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5" /> {lt('login.name', lang)}
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={farmerName}
-                  onChange={(e) => setFarmerName(e.target.value)}
-                  className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring pr-12"
-                  placeholder={lt('login.name', lang)}
-                />
-                <button
-                  type="button"
-                  onClick={() => startVoiceInput('name')}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-all ${listeningField === 'name' ? 'bg-destructive text-destructive-foreground animate-pulse' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
-                >
-                  {listeningField === 'name' ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Email */}
+          {/* Name */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5" /> {lt('login.email', lang)}
+              <User className="w-3.5 h-3.5" /> {lt('login.name', lang)}
             </label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-              className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            <div className="relative">
+              <input
+                type="text"
+                value={farmerName}
+                onChange={(e) => setFarmerName(e.target.value)}
+                required
+                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring pr-12"
+              />
+              <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                <MicButton field="name" isActive={listeningField === 'name'} />
+              </div>
+            </div>
           </div>
 
           {/* Aadhaar — farmer only */}
@@ -279,13 +301,9 @@ export default function Login({ lang }: LoginProps) {
                   placeholder="XXXX-XXXX-XXXX"
                   maxLength={14}
                 />
-                <button
-                  type="button"
-                  onClick={() => startVoiceInput('aadhaar')}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-all ${listeningField === 'aadhaar' ? 'bg-destructive text-destructive-foreground animate-pulse' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
-                >
-                  {listeningField === 'aadhaar' ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </button>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                  <MicButton field="aadhaar" isActive={listeningField === 'aadhaar'} />
+                </div>
               </div>
             </motion.div>
           )}
@@ -305,15 +323,7 @@ export default function Login({ lang }: LoginProps) {
                 className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring pr-20"
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                {isFarmer && (
-                  <button
-                    type="button"
-                    onClick={() => startVoiceInput('password')}
-                    className={`p-1.5 rounded-full transition-all ${listeningField === 'password' ? 'bg-destructive text-destructive-foreground animate-pulse' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
-                  >
-                    {listeningField === 'password' ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                  </button>
-                )}
+                <MicButton field="password" isActive={listeningField === 'password'} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
                   className="p-1.5 text-muted-foreground hover:text-foreground">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
