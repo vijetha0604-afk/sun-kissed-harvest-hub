@@ -93,7 +93,7 @@ export default function Login({ lang }: LoginProps) {
     setListeningField(null);
   }, []);
 
-  const startVoiceInput = useCallback((field: 'aadhaar' | 'password') => {
+  const startVoiceInput = useCallback((field: 'name' | 'aadhaar' | 'password') => {
     if (listeningField) {
       stopListening();
       return;
