@@ -123,16 +123,17 @@ export default function Login({ lang }: LoginProps) {
       recognition.onresult = (event: any) => {
         const transcript: string = event.results[0][0].transcript;
 
-        if (field === 'aadhaar') {
-          // Extract digits from speech (e.g., "one two three four..." or "1234...")
+        if (field === 'name') {
+          const name = transcript.trim();
+          setFarmerName(name);
+          speak(`${lt('login.voice_heard', lang)} ${name}. ${lt('login.name_accepted', lang)}`, lang);
+        } else if (field === 'aadhaar') {
           const wordToDigit: Record<string, string> = {
             zero: '0', one: '1', two: '2', three: '3', four: '4',
             five: '5', six: '6', seven: '7', eight: '8', nine: '9',
             oh: '0', o: '0',
-            // Hindi
             'शून्य': '0', 'एक': '1', 'दो': '2', 'तीन': '3', 'चार': '4',
             'पांच': '5', 'छह': '6', 'सात': '7', 'आठ': '8', 'नौ': '9',
-            // Kannada
             'ಸೊನ್ನೆ': '0', 'ಒಂದು': '1', 'ಎರಡು': '2', 'ಮೂರು': '3', 'ನಾಲ್ಕು': '4',
             'ಐದು': '5', 'ಆರು': '6', 'ಏಳು': '7', 'ಎಂಟು': '8', 'ಒಂಬತ್ತು': '9',
           };
@@ -147,11 +148,9 @@ export default function Login({ lang }: LoginProps) {
           }
           const formatted = formatAadhaar(digits);
           setAadhaar(formatted);
-          // Confirm back
           const spokenDigits = digits.split('').join(' ');
           speak(`${lt('login.voice_heard', lang)} ${spokenDigits}. ${lt('login.voice_correct', lang)}`, lang);
         } else {
-          // Password field — use raw transcript
           setPassword(transcript.trim());
           speak(lt('login.pin_accepted', lang), lang);
         }
