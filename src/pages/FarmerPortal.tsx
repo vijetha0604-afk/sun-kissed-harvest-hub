@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Sprout, AlertCircle, Check, Loader2, RotateCcw } from 'lucide-react';
+import { Mic, MicOff, Sprout, AlertCircle, Check, Loader2, RotateCcw, User, MapPin } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Language, t, speechLangCode } from '@/lib/i18n';
 import { parseCropInput, addCropRecord, CropRecord } from '@/lib/store';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface FarmerPortalProps {
   lang: Language;
@@ -18,10 +19,16 @@ function speak(text: string, lang: Language) {
   speechSynthesis.speak(u);
 }
 
+const missingTranslations: Record<string, Record<Language, string>> = {
+  'missing.farmerName': { en: 'Farmer name is missing, please say your name', hi: 'किसान का नाम गायब है, कृपया अपना नाम बताएं', kn: 'ರೈತರ ಹೆಸರು ಕಾಣೆಯಾಗಿದೆ, ದಯವಿಟ್ಟು ನಿಮ್ಮ ಹೆಸರು ಹೇಳಿ' },
+  'missing.location': { en: 'Location is missing, please say where you are from', hi: 'स्थान गायब है, कृपया बताएं कि आप कहाँ से हैं', kn: 'ಸ್ಥಳ ಕಾಣೆಯಾಗಿದೆ, ದಯವಿಟ್ಟು ನೀವು ಎಲ್ಲಿಂದ ಎಂದು ಹೇಳಿ' },
+};
+
 export default function FarmerPortal({ lang }: FarmerPortalProps) {
+  const { profile } = useAuth();
   const [stage, setStage] = useState<Stage>('idle');
   const [transcript, setTranscript] = useState('');
-  const [parsed, setParsed] = useState<{ crop?: string; weight?: string; price?: string }>({});
+  const [parsed, setParsed] = useState<{ crop?: string; weight?: string; price?: string; farmerName?: string; location?: string }>({});
   const [missing, setMissing] = useState<string[]>([]);
   const [mintedRecord, setMintedRecord] = useState<CropRecord | null>(null);
   const recognitionRef = useRef<any>(null);
@@ -56,6 +63,10 @@ export default function FarmerPortal({ lang }: FarmerPortalProps) {
 
   const processTranscript = (text: string) => {
     const result = parseCropInput(text);
+    // Use auth profile name as fallback
+    if (!result.farmerName && profile?.display_name) {
+      result.farmerName = profile.display_name;
+    }
     setParsed(result);
 
     const missingFields: string[] = [];
@@ -76,10 +87,9 @@ export default function FarmerPortal({ lang }: FarmerPortalProps) {
   const handleMint = async () => {
     if (!parsed.crop || !parsed.weight || !parsed.price) return;
     setStage('minting');
-    // Simulate blockchain minting
     await new Promise((r) => setTimeout(r, 2500));
     const record = addCropRecord({
-      farmerName: 'You',
+      farmerName: parsed.farmerName || profile?.display_name || 'Anonymous Farmer',
       crop: parsed.crop,
       weight: parsed.weight,
       price: parsed.price,
@@ -99,6 +109,14 @@ export default function FarmerPortal({ lang }: FarmerPortalProps) {
 
   const allPresent = parsed.crop && parsed.weight && parsed.price;
 
+  const reviewFields = [
+    { key: 'farmerName', label: lang === 'hi' ? 'किसान' : lang === 'kn' ? 'ರೈತ' : 'Farmer', value: parsed.farmerName || profile?.display_name, icon: User },
+    { key: 'crop', label: t('farmer.crop', lang), value: parsed.crop, icon: Sprout },
+    { key: 'weight', label: t('farmer.weight', lang), value: parsed.weight },
+    { key: 'price', label: t('farmer.price', lang), value: parsed.price },
+    { key: 'location', label: lang === 'hi' ? 'स्थान' : lang === 'kn' ? 'ಸ್ಥಳ' : 'Location', value: parsed.location, icon: MapPin },
+  ];
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-lg">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
@@ -106,8 +124,8 @@ export default function FarmerPortal({ lang }: FarmerPortalProps) {
         <p className="text-muted-foreground text-sm">{t('farmer.subtitle', lang)}</p>
       </motion.div>
 
-      {/* Sprout Button */}
       <AnimatePresence mode="wait">
+        {/* Idle / Listening */}
         {(stage === 'idle' || stage === 'listening') && (
           <motion.div key="sprout" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
             className="flex flex-col items-center gap-6">
@@ -127,7 +145,7 @@ export default function FarmerPortal({ lang }: FarmerPortalProps) {
           </motion.div>
         )}
 
-        {/* Parsed Results */}
+        {/* Review & Mint Card */}
         {stage === 'parsed' && (
           <motion.div key="parsed" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             {transcript && (
@@ -136,21 +154,28 @@ export default function FarmerPortal({ lang }: FarmerPortalProps) {
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { key: 'crop', label: t('farmer.crop', lang), value: parsed.crop },
-                { key: 'weight', label: t('farmer.weight', lang), value: parsed.weight },
-                { key: 'price', label: t('farmer.price', lang), value: parsed.price },
-              ].map((field) => (
-                <div key={field.key}
-                  className={`glass-card rounded-2xl p-4 text-center transition-all ${field.value ? 'border-primary/30 bg-accent/50' : 'border-destructive/40 bg-destructive/5'}`}>
-                  <p className="text-xs text-muted-foreground mb-1">{field.label}</p>
-                  <p className={`font-semibold text-sm ${field.value ? 'text-foreground' : 'text-destructive'}`}>
-                    {field.value || '—'}
-                  </p>
-                  {field.value ? <Check className="w-4 h-4 text-primary mx-auto mt-1" /> : <AlertCircle className="w-4 h-4 text-destructive mx-auto mt-1" />}
-                </div>
-              ))}
+            {/* Review Card */}
+            <div className="glass-card rounded-2xl p-5 space-y-3">
+              <h3 className="font-serif font-semibold text-foreground text-center text-lg">
+                {lang === 'hi' ? 'समीक्षा करें और मिंट करें' : lang === 'kn' ? 'ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮಿಂಟ್ ಮಾಡಿ' : 'Review & Mint'}
+              </h3>
+              <div className="space-y-2">
+                {reviewFields.map((field) => (
+                  <div key={field.key}
+                    className={`flex items-center justify-between rounded-xl px-4 py-3 transition-all ${field.value ? 'bg-accent/50 border border-primary/20' : 'bg-destructive/5 border border-destructive/20'}`}>
+                    <div className="flex items-center gap-2">
+                      {field.icon && <field.icon className="w-4 h-4 text-muted-foreground" />}
+                      <span className="text-xs text-muted-foreground">{field.label}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`font-semibold text-sm ${field.value ? 'text-foreground' : 'text-destructive'}`}>
+                        {field.value || '—'}
+                      </span>
+                      {field.value ? <Check className="w-4 h-4 text-primary" /> : <AlertCircle className="w-4 h-4 text-destructive" />}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Missing info alerts */}

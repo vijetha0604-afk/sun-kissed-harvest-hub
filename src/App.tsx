@@ -4,10 +4,13 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Layout from "@/components/Layout";
 import FarmerPortal from "@/pages/FarmerPortal";
 import Marketplace from "@/pages/Marketplace";
 import AdminCenter from "@/pages/AdminCenter";
+import Login from "@/pages/Login";
 import NotFound from "./pages/NotFound";
 import { Language } from "@/lib/i18n";
 
@@ -22,14 +25,36 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Layout lang={lang} setLang={setLang}>
+          <AuthProvider>
             <Routes>
-              <Route path="/" element={<FarmerPortal lang={lang} />} />
-              <Route path="/marketplace" element={<Marketplace lang={lang} />} />
-              <Route path="/admin" element={<AdminCenter lang={lang} />} />
+              <Route path="/login" element={<Login lang={lang} />} />
+              <Route element={<Layout lang={lang} setLang={setLang}><></></Layout>}>
+                {/* Wrapped routes are unused; Layout wraps via children below */}
+              </Route>
+              <Route path="/" element={
+                <ProtectedRoute requiredRole="farmer">
+                  <Layout lang={lang} setLang={setLang}>
+                    <FarmerPortal lang={lang} />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/marketplace" element={
+                <ProtectedRoute>
+                  <Layout lang={lang} setLang={setLang}>
+                    <Marketplace lang={lang} />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <ProtectedRoute>
+                  <Layout lang={lang} setLang={setLang}>
+                    <AdminCenter lang={lang} />
+                  </Layout>
+                </ProtectedRoute>
+              } />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </Layout>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

@@ -95,8 +95,16 @@ export function addPurchase(cropRecordId: string, buyerName: string): Purchase {
   return p;
 }
 
-export function parseCropInput(text: string): { crop?: string; weight?: string; price?: string } {
-  const result: { crop?: string; weight?: string; price?: string } = {};
+export function parseCropInput(text: string): { crop?: string; weight?: string; price?: string; farmerName?: string; location?: string } {
+  const result: { crop?: string; weight?: string; price?: string; farmerName?: string; location?: string } = {};
+
+  // Farmer name: "I am <name>" or "my name is <name>"
+  const nameMatch = text.match(/(?:i am|my name is|i'm|मेरा नाम|ನನ್ನ ಹೆಸರು)\s+([a-zA-Z\u0900-\u097F\u0C80-\u0CFF\s]+?)(?:\s*[,.]|\s+(?:and|from|i have|i|with|crop|rice|wheat))/i);
+  if (nameMatch) result.farmerName = nameMatch[1].trim();
+
+  // Location: "from <place>"
+  const locationMatch = text.match(/(?:from|village|गांव|ಊರು|ಹಳ್ಳಿ)\s+([a-zA-Z\u0900-\u097F\u0C80-\u0CFF\s]+?)(?:\s*[,.]|\s+(?:and|i have|with|crop|rice|wheat|\d))/i);
+  if (locationMatch) result.location = locationMatch[1].trim();
   
   // Weight: look for number + kg/kilogram
   const weightMatch = text.match(/(\d+)\s*(kg|kilogram|kilo|கிலோ|किलो|ಕೆಜಿ)/i);

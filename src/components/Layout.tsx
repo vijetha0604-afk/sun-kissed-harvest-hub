@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sprout, ShoppingBasket, BarChart3, Menu, X, Globe } from 'lucide-react';
+import { Sprout, ShoppingBasket, BarChart3, Menu, X, Globe, LogOut } from 'lucide-react';
 import { Language, t } from '@/lib/i18n';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -20,7 +21,14 @@ const langLabels: Record<Language, string> = { en: 'EN', hi: 'हिं', kn: '�
 
 export default function Layout({ children, lang, setLang }: LayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -61,6 +69,13 @@ export default function Layout({ children, lang, setLang }: LayoutProps) {
                 </button>
               ))}
             </div>
+
+            {/* Sign out */}
+            {user && (
+              <button onClick={handleSignOut} className="p-2 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-colors" title="Sign Out">
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
 
             {/* Mobile menu */}
             <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 rounded-full hover:bg-accent">
