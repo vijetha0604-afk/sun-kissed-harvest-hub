@@ -182,9 +182,9 @@ export default function Login({ lang }: LoginProps) {
           options: {
             emailRedirectTo: window.location.origin,
             data: {
-              display_name: email.split('@')[0],
+              display_name: isFarmer && farmerName ? farmerName : email.split('@')[0],
               role,
-              aadhaar_kcc: role === 'farmer' ? aadhaar.replace(/-/g, '') : null,
+              aadhaar_kcc: isFarmer ? aadhaar.replace(/-/g, '') : null,
             },
           },
         });
