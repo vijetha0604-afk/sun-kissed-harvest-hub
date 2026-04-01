@@ -230,6 +230,31 @@ export default function Login({ lang }: LoginProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-6 space-y-4">
+          {/* Name — farmer only */}
+          {isFarmer && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5" /> {lt('login.name', lang)}
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={farmerName}
+                  onChange={(e) => setFarmerName(e.target.value)}
+                  className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring pr-12"
+                  placeholder={lt('login.name', lang)}
+                />
+                <button
+                  type="button"
+                  onClick={() => startVoiceInput('name')}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-all ${listeningField === 'name' ? 'bg-destructive text-destructive-foreground animate-pulse' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
+                >
+                  {listeningField === 'name' ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+              </div>
+            </motion.div>
+          )}
+
           {/* Email */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
