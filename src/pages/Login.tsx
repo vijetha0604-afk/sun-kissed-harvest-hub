@@ -103,7 +103,7 @@ export default function Login({ lang }: LoginProps) {
     setListeningField(null);
   }, []);
 
-  const startVoiceInput = useCallback((field: VoiceField) => {
+  const startVoiceInput = useCallback(async (field: VoiceField) => {
     // Toggle off if already listening
     if (listeningField) {
       stopListening();
@@ -112,7 +112,30 @@ export default function Login({ lang }: LoginProps) {
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setError('Speech recognition not supported in this browser.');
+      setError('Speech recognition not supported. Please use Chrome, Edge, or Safari.');
+      return;
+    }
+
+    // Require secure context (HTTPS or localhost)
+    if (!window.isSecureContext) {
+      setError('Voice input requires HTTPS. Please open this site over a secure connection.');
+      return;
+    }
+
+    // Explicitly request microphone permission first so the browser shows the prompt
+    setError('');
+    try {
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Immediately stop the tracks — SpeechRecognition manages its own stream
+        stream.getTracks().forEach((t) => t.stop());
+      }
+    } catch (err: any) {
+      setError(
+        err?.name === 'NotAllowedError'
+          ? 'Microphone access denied. Click the 🔒 icon in the address bar and allow microphone, then try again.'
+          : 'Could not access microphone. Please check your device settings.'
+      );
       return;
     }
 
