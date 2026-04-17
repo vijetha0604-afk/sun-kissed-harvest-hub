@@ -94,8 +94,13 @@ export default function Login({ lang }: LoginProps) {
   const [message, setMessage] = useState('');
   const [listeningField, setListeningField] = useState<VoiceField | null>(null);
   const recognitionRef = useRef<any>(null);
+  const promptTimeoutRef = useRef<number | null>(null);
 
   const stopListening = useCallback(() => {
+    if (promptTimeoutRef.current) {
+      window.clearTimeout(promptTimeoutRef.current);
+      promptTimeoutRef.current = null;
+    }
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch (_) {}
       recognitionRef.current = null;
@@ -149,15 +154,26 @@ export default function Login({ lang }: LoginProps) {
     recognition.continuous = false;
     recognitionRef.current = recognition;
 
-    // Speak prompt in parallel (doesn't block recognition)
     const promptKeys: Record<VoiceField, string> = {
       name: 'login.voice_name_prompt',
       aadhaar: 'login.voice_aadhaar_prompt',
       password: 'login.voice_password_prompt',
     };
-    speak(lt(promptKeys[field], lang), lang);
+
+    let hasHeardSpeech = false;
+    promptTimeoutRef.current = window.setTimeout(() => {
+      if (!hasHeardSpeech && recognitionRef.current) {
+        speak(lt(promptKeys[field], lang), lang);
+      }
+    }, 1400);
 
     recognition.onresult = (event: any) => {
+      hasHeardSpeech = true;
+      if (promptTimeoutRef.current) {
+        window.clearTimeout(promptTimeoutRef.current);
+        promptTimeoutRef.current = null;
+      }
+
       const result = event.results[event.results.length - 1];
       const transcript: string = result[0].transcript;
 
@@ -168,7 +184,6 @@ export default function Login({ lang }: LoginProps) {
           setListeningField(null);
         }
       } else if (field === 'aadhaar') {
-        // Extract digits from speech
         let digits = '';
         const words = transcript.toLowerCase().split(/[\s,.-]+/);
         for (const w of words) {
@@ -185,7 +200,6 @@ export default function Login({ lang }: LoginProps) {
           setListeningField(null);
         }
       } else {
-        // Password — use raw transcript
         setPassword(transcript.trim());
         if (result.isFinal) {
           speak(lt('login.pin_accepted', lang), lang);
@@ -195,10 +209,15 @@ export default function Login({ lang }: LoginProps) {
     };
 
     recognition.onerror = (event: any) => {
+      if (promptTimeoutRef.current) {
+        window.clearTimeout(promptTimeoutRef.current);
+        promptTimeoutRef.current = null;
+      }
       const code = event?.error;
       if (code === 'not-allowed' || code === 'service-not-allowed') {
         setError('Microphone permission blocked. Allow mic access in your browser site settings.');
       } else if (code === 'no-speech') {
+        speak(lt(promptKeys[field], lang), lang);
         setError('No speech detected. Please try again and speak clearly.');
       } else if (code === 'audio-capture') {
         setError('No microphone found. Please connect a mic and try again.');
@@ -209,6 +228,10 @@ export default function Login({ lang }: LoginProps) {
       recognitionRef.current = null;
     };
     recognition.onend = () => {
+      if (promptTimeoutRef.current) {
+        window.clearTimeout(promptTimeoutRef.current);
+        promptTimeoutRef.current = null;
+      }
       setListeningField(null);
       recognitionRef.current = null;
     };
@@ -217,7 +240,10 @@ export default function Login({ lang }: LoginProps) {
   }, [lang, listeningField, stopListening]);
 
   useEffect(() => {
-    return () => { if (recognitionRef.current) try { recognitionRef.current.stop(); } catch (_) {} };
+    return () => {
+      if (promptTimeoutRef.current) window.clearTimeout(promptTimeoutRef.current);
+      if (recognitionRef.current) try { recognitionRef.current.stop(); } catch (_) {}
+    };
   }, []);
 
   // Build email from name for auth (name@farmchain.local)
