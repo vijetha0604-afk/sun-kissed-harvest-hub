@@ -194,7 +194,17 @@ export default function Login({ lang }: LoginProps) {
       }
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (event: any) => {
+      const code = event?.error;
+      if (code === 'not-allowed' || code === 'service-not-allowed') {
+        setError('Microphone permission blocked. Allow mic access in your browser site settings.');
+      } else if (code === 'no-speech') {
+        setError('No speech detected. Please try again and speak clearly.');
+      } else if (code === 'audio-capture') {
+        setError('No microphone found. Please connect a mic and try again.');
+      } else if (code === 'network') {
+        setError('Network error during voice recognition. Check your connection.');
+      }
       setListeningField(null);
       recognitionRef.current = null;
     };
